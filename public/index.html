@@ -1,0 +1,22 @@
+<html>
+<body>
+  <h1>Inline Mocker Test</h1>
+  <button id="run-fetch">Fetch /api/test</button>
+
+  <pre id="fetch-output"></pre>
+
+  <script src="mocker.js"></script>
+  <script>
+    document.getElementById('run-fetch').addEventListener('click', async () => {
+      const output = document.getElementById('fetch-output');
+      try {
+        const res = await fetch('/api/test');
+        const text = await res.text();
+        output.textContent = `Response (${res.status}):\n` + text;
+      } catch (err) {
+        output.textContent = 'Error: ' + err.message;
+      }
+    });
+    </script>
+</body>
+</html>

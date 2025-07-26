@@ -1,0 +1,11 @@
+{
+  "name": "fetch-proxy-test",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "five-server public --port=5000 --open=index.html --host=localhost"
+  },
+  "devDependencies": {
+    "five-server": "^0.5.4"
+  }
+}

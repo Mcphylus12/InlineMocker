@@ -1,0 +1,101 @@
+<html>
+<body>
+  <h2>Response editor</h2>
+  <form id="add-form">
+    <label>URL (exact match): <input name="url" required></label><br>
+    <label>Status: <input name="status" type="number" value="200"></label><br>
+    <label>Headers (JSON): <textarea name="headers">{ "Content-Type": "application/json" }</textarea></label><br>
+    <label>Body: <textarea name="body">{ "message": "Hello from iframe" }</textarea></label><br>
+    <button type="submit">Add/Update Response</button>
+  </form>
+
+  <h3>Saved Responses</h3>
+  <table id="responses-table">
+    <thead>
+      <tr><th>URL</th><th>Status</th><th>Headers</th><th>Body</th><th>Actions</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <h3>Request Log</h3>
+  <ul id="log" style="max-height: 200px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></ul>
+
+
+  <script>
+    const responses = new Map();
+
+    function renderTable() {
+      const tbody = document.querySelector("#responses-table tbody");
+      tbody.innerHTML = "";
+      for (const [url, res] of responses.entries()) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${url}</td>
+          <td>${res.status}</td>
+          <td><pre>${JSON.stringify(res.headers)}</pre></td>
+          <td><pre>${res.body}</pre></td>
+          <td><button data-url="${url}">Delete</button></td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    document.getElementById("add-form").addEventListener("submit", e => {
+      e.preventDefault();
+      const form = e.target;
+      const url = form.url.value;
+      try {
+        const status = parseInt(form.status.value);
+        const headers = JSON.parse(form.headers.value);
+        const body = form.body.value;
+
+        responses.set(url, { status, headers, body });
+        renderTable();
+        form.reset();
+      } catch (err) {
+        alert("Invalid input: " + err.message);
+      }
+    });
+
+    document.querySelector("#responses-table").addEventListener("click", (e) => {
+      if (e.target.tagName === "BUTTON") {
+        responses.delete(e.target.dataset.url);
+        renderTable();
+      }
+    });
+
+    window.addEventListener("message", (event) => {
+      const data = event.data;
+      if (!data) return;
+
+      const match = responses.get(data.url);
+      if (match) {
+        logRequest(data.url, true, `responded with status ${match.status}`);
+        event.source.postMessage({
+          id: data.id,
+          status: match.status,
+          statusText: "OK",
+          headers: match.headers,
+          body: match.body
+        }, "*");
+      } else {
+        logRequest(data.url, false, "no mock response found");
+        event.source.postMessage({
+          id: data.id,
+          error: 'no mock'
+        }, "*");
+      }
+    });
+
+    
+    function logRequest(url, success, message) {
+      const log = document.getElementById('log');
+      const li = document.createElement('li');
+      li.textContent = `${success ? 'pass' : 'fail'} ${url} — ${message}`;
+      log.prepend(li);
+    }
+    
+    renderTable();
+  </script>
+</body>
+</html>
