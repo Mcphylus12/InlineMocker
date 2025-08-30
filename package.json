@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "five-server public --port=5000 --open=index.html --host=localhost"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "devDependencies": {
-    "five-server": "^0.5.4"
+    "vite": "^7.1.3"
   }
 }
