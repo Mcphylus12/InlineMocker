@@ -112,6 +112,10 @@ class IframeFetchProxy {
   }
 }
 
-const iframe = createIframe();
-createToggleButton(iframe);
-new IframeFetchProxy(iframe);
+const params = new URLSearchParams(window.location.search);
+if (params.get("debug-mocker") == "true") {
+  const iframe = createIframe();
+  createToggleButton(iframe);
+  new IframeFetchProxy(iframe);
+}
+

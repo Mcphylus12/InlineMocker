@@ -9,6 +9,12 @@
     <button type="submit">Add/Update Response</button>
   </form>
 
+  <div style="margin-top:1em;">
+    <button id="export-btn" class="green">Export Responses</button>
+    <input type="file" id="import-file" accept="application/json" style="display:none;">
+    <button id="import-btn" class="green">Import Responses</button>
+  </div>
+
   <h3>Saved Responses</h3>
   <table id="responses-table">
     <thead>
@@ -71,7 +77,7 @@ form#add-form textarea {
   resize: vertical;
 }
 
-form#add-form button {
+button {
   margin-top: 12px;
   padding: 8px 16px;
   font-size: 1em;
@@ -83,9 +89,19 @@ form#add-form button {
   transition: background 0.2s ease;
 }
 
-form#add-form button:hover {
+button:hover {
   background: #0056b3;
 }
+
+button.green {
+  background: #01c35f;
+}
+
+button.green:hover {
+  background: #00b356;
+}
+
+
 
 /* Table styling */
 #responses-table {
@@ -144,7 +160,62 @@ form#add-form button:hover {
 </style>
 
   <script>
-    const responses = new Map();
+
+    document.getElementById("export-btn").addEventListener("click", () => {
+      const obj = Object.fromEntries(responses.entries());
+      const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "responses.json";
+      a.click();
+      
+      URL.revokeObjectURL(url);
+    });
+
+    // --- Import responses from file ---
+    document.getElementById("import-btn").addEventListener("click", () => {
+      document.getElementById("import-file").click();
+    });
+
+    document.getElementById("import-file").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          const newMap = new Map(Object.entries(data));
+          responses.clear();
+          for (const [k, v] of newMap) responses.set(k, v);
+          saveResponses();
+          renderTable();
+          alert("Responses imported successfully!");
+        } catch (err) {
+          alert("Invalid JSON: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    });
+
+
+    function saveResponses() {
+      const obj = Object.fromEntries(responses.entries());
+      localStorage.setItem("debugmockerresponses", JSON.stringify(obj));
+    }
+
+    function loadResponses() {
+      try {
+        const data = JSON.parse(localStorage.getItem("debugmockerresponses") || "{}");
+        return new Map(Object.entries(data));
+      } catch {
+        return new Map();
+      }
+    }
+
+    const responses = loadResponses();
 
     function renderTable() {
       const tbody = document.querySelector("#responses-table tbody");
@@ -172,6 +243,7 @@ form#add-form button:hover {
         const body = form.body.value;
 
         responses.set(url, { status, headers, body });
+        saveResponses();
         renderTable();
         form.reset();
       } catch (err) {
@@ -182,6 +254,7 @@ form#add-form button:hover {
     document.querySelector("#responses-table").addEventListener("click", (e) => {
       if (e.target.tagName === "BUTTON") {
         responses.delete(e.target.dataset.url);
+        saveResponses();
         renderTable();
       }
     });
